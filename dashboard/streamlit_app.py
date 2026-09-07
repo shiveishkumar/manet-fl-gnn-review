@@ -10,31 +10,18 @@ st.set_page_config(
 st.title("Dynamic MANET Intrusion Detection Demo")
 
 st.write(
-    "Interactive visualization of the dynamic MANET dataset "
-    "generated from the project simulation."
+    "Interactive visualization of the dynamic MANET dataset and saved model results."
 )
-
-# -----------------------------
-# LOAD DATA
-# -----------------------------
 
 @st.cache_data
 def load_data():
-    nodes = pd.read_csv("data/processed/nodes_dynamic.csv")
-    edges = pd.read_csv("data/processed/edges_dynamic.csv")
-
-    fl = pd.read_csv("results/fl_gcn_summary.csv")
-    gnn = pd.read_csv("results/gnn_summary.csv")
-
+    nodes = pd.read_csv("../data/processed/nodes_dynamic.csv")
+    edges = pd.read_csv("../data/processed/edges_dynamic.csv")
+    fl = pd.read_csv("../results/fl_gcn_summary.csv")
+    gnn = pd.read_csv("../results/gnn_summary.csv")
     return nodes, edges, fl, gnn
 
-
 nodes, edges, fl_summary, gnn_summary = load_data()
-
-
-# -----------------------------
-# SIDEBAR
-# -----------------------------
 
 st.sidebar.header("Simulation Controls")
 
@@ -56,11 +43,6 @@ selected_time = st.sidebar.select_slider(
     options=times
 )
 
-
-# -----------------------------
-# CURRENT SNAPSHOT
-# -----------------------------
-
 snapshot_nodes = nodes[
     (nodes["run"] == selected_run) &
     (nodes["time"] == selected_time)
@@ -71,11 +53,6 @@ snapshot_edges = edges[
     (edges["time"] == selected_time)
 ].copy()
 
-
-# -----------------------------
-# COUNTS
-# -----------------------------
-
 normal_count = (
     snapshot_nodes["label"] == 0
 ).sum()
@@ -83,7 +60,6 @@ normal_count = (
 malicious_count = (
     snapshot_nodes["label"] == 1
 ).sum()
-
 
 col1, col2, col3 = st.columns(3)
 
@@ -102,14 +78,6 @@ col3.metric(
     int(malicious_count)
 )
 
-
-# -----------------------------
-# NODE POSITIONS
-# -----------------------------
-
-# Use x/y if available.
-# Otherwise derive coordinates from mobility columns if needed.
-
 x_col = None
 y_col = None
 
@@ -123,52 +91,27 @@ for name in ["y", "y_pos", "pos_y", "y_position"]:
         y_col = name
         break
 
-
 if x_col is None or y_col is None:
-
-    st.warning(
-        "Position columns were not found in nodes_dynamic.csv. "
-        "Showing node IDs in a simple layout instead."
-    )
-
-    snapshot_nodes["plot_x"] = range(
-        len(snapshot_nodes)
-    )
-
-    snapshot_nodes["plot_y"] = (
-        snapshot_nodes["node_id"] % 10
-    )
-
+    snapshot_nodes["plot_x"] = snapshot_nodes["node_id"] % 15
+    snapshot_nodes["plot_y"] = snapshot_nodes["node_id"] // 15
     x_col = "plot_x"
     y_col = "plot_y"
 
-
-# -----------------------------
-# BUILD GRAPH
-# -----------------------------
-
 fig = go.Figure()
 
-
-# map node id to position
 positions = {}
 
 for _, row in snapshot_nodes.iterrows():
-
     positions[int(row["node_id"])] = (
         row[x_col],
         row[y_col]
     )
 
-
-# edges
 for _, edge in snapshot_edges.iterrows():
-
     src = int(edge["src"])
     dst = int(edge["dst"])
 
     if src in positions and dst in positions:
-
         x0, y0 = positions[src]
         x1, y1 = positions[dst]
 
@@ -186,8 +129,6 @@ for _, edge in snapshot_edges.iterrows():
             )
         )
 
-
-# normal nodes
 normal = snapshot_nodes[
     snapshot_nodes["label"] == 0
 ]
@@ -202,15 +143,13 @@ fig.add_trace(
             size=9
         ),
         text=[
-            f"Node {n}"
-            for n in normal["node_id"]
+            f"Node {node_id}"
+            for node_id in normal["node_id"]
         ],
         hovertemplate="%{text}<extra></extra>"
     )
 )
 
-
-# malicious nodes
 malicious = snapshot_nodes[
     snapshot_nodes["label"] == 1
 ]
@@ -226,8 +165,8 @@ fig.add_trace(
             symbol="x"
         ),
         text=[
-            f"Node {n}<br>Attack: {a}"
-            for n, a in zip(
+            f"Node {node_id}<br>Attack: {attack}"
+            for node_id, attack in zip(
                 malicious["node_id"],
                 malicious["attack"]
             )
@@ -235,7 +174,6 @@ fig.add_trace(
         hovertemplate="%{text}<extra></extra>"
     )
 )
-
 
 fig.update_layout(
     title=(
@@ -253,21 +191,13 @@ st.plotly_chart(
     use_container_width=True
 )
 
-
-# -----------------------------
-# ATTACK DETAILS
-# -----------------------------
-
 st.subheader("Attack Distribution")
 
 if malicious_count == 0:
-
     st.info(
         "No malicious nodes at this timestamp."
     )
-
 else:
-
     attack_counts = (
         malicious["attack"]
         .value_counts()
@@ -284,35 +214,20 @@ else:
         use_container_width=True
     )
 
+st.subheader("Federated Lightweight GCN Results")
 
-# -----------------------------
-# MODEL RESULTS
-# -----------------------------
+st.dataframe(
+    fl_summary,
+    use_container_width=True
+)
 
-st.subheader("Model Performance")
+st.subheader("Centralized GNN Model Results")
 
-col1, col2 = st.columns(2)
-
-with col1:
-
-    st.write("### Federated Lightweight GCN")
-
-    st.dataframe(
-        fl_summary,
-        use_container_width=True
-    )
-
-with col2:
-
-    st.write("### Centralized GNN Models")
-
-    st.dataframe(
-        gnn_summary,
-        use_container_width=True
-    )
-
+st.dataframe(
+    gnn_summary,
+    use_container_width=True
+)
 
 st.caption(
-    "This dashboard visualizes saved simulation data and "
-    "model results. It does not rerun NS-3 or retrain the models live."
+    "This dashboard visualizes saved simulation data and model results."
 )
