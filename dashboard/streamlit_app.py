@@ -15,10 +15,10 @@ st.write(
 
 @st.cache_data
 def load_data():
-    nodes = pd.read_csv("../data/processed/nodes_dynamic.csv")
-    edges = pd.read_csv("../data/processed/edges_dynamic.csv")
-    fl = pd.read_csv("../results/fl_gcn_summary.csv")
-    gnn = pd.read_csv("../results/gnn_summary.csv")
+    nodes = pd.read_csv("data/processed/nodes_dynamic.csv")
+    edges = pd.read_csv("data/processed/edges_dynamic.csv")
+    fl = pd.read_csv("results/fl_gcn_summary.csv")
+    gnn = pd.read_csv("results/gnn_summary.csv")
     return nodes, edges, fl, gnn
 
 nodes, edges, fl_summary, gnn_summary = load_data()
