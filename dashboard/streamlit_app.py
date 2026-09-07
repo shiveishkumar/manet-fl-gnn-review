@@ -18,27 +18,29 @@ def load_data():
     nodes = pd.read_csv("data/processed/nodes_dynamic.csv")
     edges = pd.read_csv("data/processed/edges_dynamic.csv")
     fl = pd.read_csv("results/fl_gcn_summary.csv")
+
     gnn = pd.read_csv(
-    "results/gnn_summary.csv",
-    header=[0, 1],
-    index_col=0
-)
+        "results/gnn_summary.csv",
+        header=[0, 1],
+        index_col=0
+    )
 
-gnn.columns = [
-    "Accuracy Mean",
-    "Accuracy Std",
-    "Malicious Precision Mean",
-    "Malicious Precision Std",
-    "Malicious Recall Mean",
-    "Malicious Recall Std",
-    "Malicious F1 Mean",
-    "Malicious F1 Std"
-]
+    gnn.columns = [
+        "Accuracy Mean",
+        "Accuracy Std",
+        "Malicious Precision Mean",
+        "Malicious Precision Std",
+        "Malicious Recall Mean",
+        "Malicious Recall Std",
+        "Malicious F1 Mean",
+        "Malicious F1 Std"
+    ]
 
-gnn = gnn.reset_index().rename(
-    columns={"model": "Model"}
-)
-return nodes, edges, fl, gnn
+    gnn = gnn.reset_index().rename(
+        columns={"model": "Model"}
+    )
+
+    return nodes, edges, fl, gnn
 
 nodes, edges, fl_summary, gnn_summary = load_data()
 
