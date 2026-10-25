@@ -1,0 +1,8 @@
+Metric,Value
+Trainable Parameters,114.0
+Bytes per Parameter,4.0
+Model Update Size (Bytes),456.0
+Clients,5.0
+Federated Rounds,5.0
+Estimated Total Communication (Bytes),22800.0
+Estimated Total Communication (KB),22.265625
