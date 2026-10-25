@@ -1,0 +1,11 @@
+file,expected_nodes,expected_run,rows,snapshots,unique_nodes,header_ok,run_ids_ok,time_range_ok,coordinate_bounds_ok,speed_nonnegative,duplicate_node_time_pairs,pass,errors
+data/raw/positions_150n_seed1.csv,150,1,7650,51,150,True,True,True,True,True,0,True,
+data/raw/positions_150n_seed2.csv,150,2,7650,51,150,True,True,True,True,True,0,True,
+data/raw/positions_150n_seed3.csv,150,3,7650,51,150,True,True,True,True,True,0,True,
+data/raw/positions_150n_seed4.csv,150,4,7650,51,150,True,True,True,True,True,0,True,
+data/raw/positions_150n_seed5.csv,150,5,7650,51,150,True,True,True,True,True,0,True,
+data/raw/scalability/positions_100_run1.csv,100,1,5100,51,100,True,True,True,True,True,0,True,
+data/raw/scalability/positions_200_run1.csv,200,1,10200,51,200,True,True,True,True,True,0,True,
+data/raw/scalability/positions_300_run1.csv,300,1,15300,51,300,True,True,True,True,True,0,True,
+data/raw/scalability/positions_400_run1.csv,400,1,20400,51,400,True,True,True,True,True,0,True,
+data/raw/scalability/positions_500_run1.csv,500,1,25500,51,500,True,True,True,True,True,0,True,
