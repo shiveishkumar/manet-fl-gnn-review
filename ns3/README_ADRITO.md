@@ -1,261 +1,148 @@
 # Adrito — NS-3 MANET Mobility Simulation
 
-## Assigned Component
+## 1. Scope
 
-This component generates realistic MANET mobility data using NS-3.
+This contribution documents and validates the NS-3 mobility-data component of the MANET project. NS-3 generates node-position snapshots; the downstream Python pipeline assigns attack labels and constructs dynamic graph data. These are separate stages.
 
-The simulation uses:
+## 2. Mobility Configuration
 
-- NS-3.47
-- RandomWaypointMobilityModel
-- 1000 × 1000 m simulation area
-- Node speeds uniformly distributed between 5 and 25 m/s
-- 10 second pause time
-- 500 second simulation duration
-- Position snapshots every 10 seconds
-- Raw position data exported as CSV
+The source is `ns3/manet_mobility.cc`. The defaults defined in the source are:
 
-## Baseline Dataset
+| Parameter | Default | Unit | Override |
+|---|---:|---|---|
+| Mobility model | RandomWaypointMobilityModel | — | Source configuration |
+| Node count | 100 | nodes | `--nodes` |
+| Simulation duration | 500 | seconds | `--simTime` |
+| Snapshot interval | 10 | seconds | `--interval` |
+| Minimum speed | 5 | m/s | `--minSpeed` |
+| Maximum speed | 25 | m/s | `--maxSpeed` |
+| Pause time | 10 | seconds | `--pause` |
+| Area width | 1000 | metres | `--areaX` |
+| Area height | 1000 | metres | `--areaY` |
+| RNG seed | 12345 | — | Fixed in source |
+| RNG run number | 1 | — | `--run` |
+| Default output | `positions_run1.csv` | — | `--output` |
 
-The baseline configuration contains:
+The checked-in baseline dataset uses 150 nodes and run numbers 1–5. The source default of 100 nodes should not be confused with this baseline configuration.
 
-- 150 mobile nodes
-- 5 independent simulation runs
-- RNG seed: 12345
-- RNG run numbers: 1–5
-- Simulation time: 500 seconds
-- Snapshot interval: 10 seconds
+## 3. Dataset Inventory
 
-Each baseline CSV contains:
+Each file contains one row per node per snapshot, with snapshots at 0, 10, 20, ..., 500 seconds. That is 51 snapshots per simulation.
 
-- 51 snapshots: t = 0, 10, 20, ..., 500 seconds
-- 150 nodes per snapshot
-- 7,650 data rows
-- 7,651 total CSV lines including the header
+### Baseline runs
 
-## Scalability Dataset
+Files are stored under `data/raw/`:
 
-Additional simulations were generated with:
+- `positions_150n_seed1.csv`
+- `positions_150n_seed2.csv`
+- `positions_150n_seed3.csv`
+- `positions_150n_seed4.csv`
+- `positions_150n_seed5.csv`
 
-| Nodes | Runs | Data Rows |
-|------:|-----:|----------:|
-| 100 | 1 | 5,100 |
-| 200 | 1 | 10,200 |
-| 300 | 1 | 15,300 |
-| 400 | 1 | 20,400 |
-| 500 | 1 | 25,500 |
+Each file contains 7,650 data rows (7,651 lines including the header), giving 38,250 data rows across five runs.
 
-These runs use the same mobility configuration as the baseline.
+### Scalability runs
 
-## Output Format
+Files are stored under `data/raw/scalability/`:
 
-Each CSV contains the following columns:
+| File | Nodes | Data rows |
+|---|---:|---:|
+| `positions_100_run1.csv` | 100 | 5,100 |
+| `positions_200_run1.csv` | 200 | 10,200 |
+| `positions_300_run1.csv` | 300 | 15,300 |
+| `positions_400_run1.csv` | 400 | 20,400 |
+| `positions_500_run1.csv` | 500 | 25,500 |
+
+These five files contain 76,500 data rows. Across the baseline and scalability inventory, the 10 validated files contain 114,750 data rows.
+
+## 4. CSV Schema
+
+The expected header is:
 
 ```text
-run,time,node_id,x,y,speed 
-Where:
-
-* run = NS-3 RNG run number
-* time = simulation time in seconds
-* node_id = mobile node identifier
-* x = node X coordinate in metres
-* y = node Y coordinate in metres
-* speed = instantaneous node speed in m/s
-Example:
 run,time,node_id,x,y,speed
-1,0.00,0,389.63,402.33,0.00
-1,0.00,1,296.83,120.89,0.00
-1,0.00,2,136.79,804.81,0.00
-Raw Data Files
+```
 
-All final raw datasets are stored in:
-data/raw/
+- `run`: simulation run number
+- `time`: simulation time in seconds
+- `node_id`: node identifier
+- `x`, `y`: node coordinates in metres
+- `speed`: recorded node speed in metres per second
 
-Files:
+## 5. Validation
 
-positions_100n_seed1.csv
+Run the standard-library validation script from the repository root:
 
-positions_150n_seed1.csv
-positions_150n_seed2.csv
-positions_150n_seed3.csv
-positions_150n_seed4.csv
-positions_150n_seed5.csv
+```bash
+python3 ns3/validate_mobility.py
+```
 
-positions_200n_seed1.csv
-positions_300n_seed1.csv
-positions_400n_seed1.csv
-positions_500n_seed1.csv
+The script checks all five baseline and five scalability CSV files for:
 
-Total raw mobility data rows across all files:
+- Expected header and row count
+- 51 distinct snapshots
+- Node IDs matching `0..N-1`
+- Expected run ID
+- Simulation time within 0–500 seconds
+- Coordinates within the configured 0–1000 metre bounds
+- Nonnegative speeds
+- Duplicate `(time, node_id)` pairs
 
-142,500
+The recorded validation result was **10 files passed and 0 failed**. Detailed outputs are:
 
-NS-3 Simulation Source
+- `results/ns3_validation.csv`
+- `results/ns3_validation_report.txt`
 
-The simulation source is:
-~/simulators/ns-3.47/scratch/manet_mobility.cc
-The source uses:
-~/simulators/ns-3.47/scratch/manet_mobility.cc
-and exports one row for every node at every scheduled snapshot.
+This is a structural and value-range audit of the checked-in CSVs. It does not, by itself, establish that the files were freshly regenerated by rerunning NS-3.
 
-Reproducing a Baseline Run
+## 6. Topology Snapshots
 
-From the NS-3.47 directory:
-./ns3 run "scratch/manet_mobility --nodes=150 --simTime=500 --interval=10 --minSpeed=5 --maxSpeed=25 --pause=10 --areaX=1000 --areaY=1000 --run=1 --output=positions_150n_seed1.csv"
+The repository contains topology visualizations for run 1 at these times:
 
-For runs 2–5, change the --run value and output filename accordingly.
+- `results/topology_run1_t0.png`
+- `results/topology_run1_t100.png`
+- `results/topology_run1_t150.png`
+- `results/topology_run1_t250.png`
+- `results/topology_run1_t350.png`
+- `results/topology_run1_t450.png`
+- `results/topology_run1_t500.png`
 
-Reproducing Scalability Runs
+To regenerate snapshots at 100 and 500 seconds, from the repository root:
 
-Example for 100 nodes:
+```bash
+python python/plot_snapshots.py --positions data/raw/positions_150n_seed1.csv --run 1 --times 100 500 --out results
+```
 
-./ns3 run "scratch/manet_mobility --nodes=100 --simTime=500 --interval=10 --minSpeed=5 --maxSpeed=25 --pause=10 --areaX=1000 --areaY=1000 --run=1 --output=positions_100n_seed1.csv"
+The plotting script requires Matplotlib.
 
-The same command structure can be used for 200, 300, 400, and 500 nodes by changing --nodes and the output filename.
+## 7. Downstream Attack Timeline
 
-Validation
+Attack labels and wormhole shortcut edges are implemented in `python/build_dynamic_dataset.py`, downstream of the NS-3 mobility CSV generation.
 
-The generated datasets were checked for:
+| Time condition | Behavior in the Python pipeline |
+|---|---|
+| `time >= 100 s` | Selected blackhole nodes can receive the `blackhole` label |
+| `time >= 200 s` | Selected greyhole nodes can receive the `greyhole` label |
+| `time >= 300 s` | Selected wormhole nodes can receive the `wormhole` label; shortcut edges can be added |
 
-* Correct CSV header
-* Expected number of rows
-* Correct run number
-* Simulation time within 0–500 seconds
-* Valid node IDs
-* X coordinates within 0–1000 m
-* Y coordinates within 0–1000 m
-* Non-negative speed values
+The label-selection function checks blackhole, then greyhole, then wormhole. If a node meets multiple conditions, the first matching condition takes precedence. This describes the downstream dataset-generation logic, not packet-level attack simulation performed by the NS-3 mobility source.
 
-All 10 final CSV files passed validation.
+## 8. Reproducibility Notes
 
-Expected baseline:
+The source exposes command-line parameters for node count, duration, snapshot interval, speed range, pause duration, area dimensions, run number, and output filename. The RNG seed is fixed at 12345 in the source.
 
-150 nodes × 51 snapshots = 7,650 data rows
+The checked-in data inventory includes a five-run, 150-node baseline and single-run scalability files for 100, 200, 300, 400, and 500 nodes. These are different experimental groups and should be described separately.
 
-Expected scalability rows:
+The validation script and its reports are included in this contribution so that another contributor can repeat the CSV audit. For full simulation reproducibility, use NS-3.47, compile/run the source with the documented parameters, and compare regenerated outputs separately from this structural validation.
 
-100 nodes × 51 snapshots = 5,100
-200 nodes × 51 snapshots = 10,200
-300 nodes × 51 snapshots = 15,300
-400 nodes × 51 snapshots = 20,400
-500 nodes × 51 snapshots = 25,500
+## 9. Relevant Files
 
-Downstream Handoff
-
-These files are the raw mobility outputs for the next stage of the project.
-
-The downstream processing stage can use these raw position CSVs to generate the dynamic graph representation.
-
-This component does not generate:
-
-nodes.csv
-edges.csv
-
-Those are downstream graph-processing outputs.
-
-Project Location
-
-~/manet-fl-gnn-review/
-
-Raw datasets:
-
-~/manet-fl-gnn-review/data/raw/
-
-NS-3 simulation source:
-
-~/simulators/ns-3.47/scratch/manet_mobility.cc
-
-Status
-
-NS-3 installation: COMPLETE
-
-Random Waypoint mobility implementation: COMPLETE
-
-150-node × 5-run baseline: COMPLETE
-
-100–500 node scalability runs: COMPLETE
-
-Raw CSV generation: COMPLETE
-
-Dataset validation: COMPLETE
-
-Ready for downstream processing.
-EOF./ns3 run "scratch/manet_mobility --nodes=150 --simTime=500 --interval=10 --minSpeed=5 --maxSpeed=25 --pause=10 --areaX=1000 --areaY=1000 --run=1 --output=positions_150n_seed1.csv"
-
-For runs 2–5, change the --run value and output filename accordingly.
-
-Reproducing Scalability Runs
-
-Example for 100 nodes:
-
-./ns3 run "scratch/manet_mobility --nodes=100 --simTime=500 --interval=10 --minSpeed=5 --maxSpeed=25 --pause=10 --areaX=1000 --areaY=1000 --run=1 --output=positions_100n_seed1.csv"
-
-The same command structure can be used for 200, 300, 400, and 500 nodes by changing --nodes and the output filename.
-
-Validation
-
-The generated datasets were checked for:
-
-* Correct CSV header
-* Expected number of rows
-* Correct run number
-* Simulation time within 0–500 seconds
-* Valid node IDs
-* X coordinates within 0–1000 m
-* Y coordinates within 0–1000 m
-* Non-negative speed values
-
-All 10 final CSV files passed validation.
-
-Expected baseline:
-
-150 nodes × 51 snapshots = 7,650 data rows
-
-Expected scalability rows:
-
-100 nodes × 51 snapshots = 5,100
-200 nodes × 51 snapshots = 10,200
-300 nodes × 51 snapshots = 15,300
-400 nodes × 51 snapshots = 20,400
-500 nodes × 51 snapshots = 25,500
-
-Downstream Handoff
-
-These files are the raw mobility outputs for the next stage of the project.
-
-The downstream processing stage can use these raw position CSVs to generate the dynamic graph representation.
-
-This component does not generate:
-
-nodes.csv
-edges.csv
-
-Those are downstream graph-processing outputs.
-
-Project Location
-
-~/manet-fl-gnn-review/
-
-Raw datasets:
-
-~/manet-fl-gnn-review/data/raw/
-
-NS-3 simulation source:
-
-~/simulators/ns-3.47/scratch/manet_mobility.cc
-
-Status
-
-NS-3 installation: COMPLETE
-
-Random Waypoint mobility implementation: COMPLETE
-
-150-node × 5-run baseline: COMPLETE
-
-100–500 node scalability runs: COMPLETE
-
-Raw CSV generation: COMPLETE
-
-Dataset validation: COMPLETE
-
-Ready for downstream processing.
+- `ns3/manet_mobility.cc` — NS-3 mobility simulation source
+- `ns3/validate_mobility.py` — CSV validation script
+- `python/plot_snapshots.py` — topology plotting script
+- `python/build_dynamic_dataset.py` — downstream attack labels and dynamic graph construction
+- `data/raw/` — baseline mobility CSVs
+- `data/raw/scalability/` — scalability mobility CSVs
+- `results/ns3_validation.csv` — per-file validation summary
+- `results/ns3_validation_report.txt` — readable validation report
+- `results/topology_run1_t*.png` — selected topology snapshots
